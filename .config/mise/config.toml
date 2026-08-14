@@ -5,15 +5,10 @@ gh = "latest"
 herdr = "latest"
 lazygit = "latest"
 neovim = "latest"
-node = "latest"
-npm = "latest"
-opencode = "latest"
-pi = "latest"
 ripgrep = "latest"
 
 [env]
 PI_CODING_AGENT_DIR = "~/.config/pi"
-NPM_CONFIG_USERCONFIG = "/root/.config/npm"
 
 [shell_alias]
 less = "bat"
@@ -43,3 +38,4 @@ gre = "git reset"
 "~/.config/opencode/opencode.jsonc" = {}
 "~/.config/quadctl" = {}
 "~/.config/mise" = {}
+"~/.bashrc/activate" = { block = 'eval "$(mise activate bash)"' } 
