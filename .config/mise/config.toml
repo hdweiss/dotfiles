@@ -5,6 +5,7 @@ gh = "latest"
 herdr = "latest"
 lazygit = "latest"
 neovim = "latest"
+podman = { version = "latest", rename_exe = "podman-remote" }
 ripgrep = "latest"
 
 [env]
@@ -38,4 +39,4 @@ gre = "git reset"
 "~/.config/opencode/opencode.jsonc" = {}
 "~/.config/quadctl" = {}
 "~/.config/mise" = {}
-"~/.bashrc/activate" = { block = 'eval "$(mise activate bash)"' } 
+"~/.bashrc/activate" = { block = 'eval "$(~/.local/bin/mise activate bash)"' } 
