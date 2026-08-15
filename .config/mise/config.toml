@@ -37,10 +37,13 @@ gre = "git reset"
 "~/.config/nvim" = { url = "https://github.com/LazyVim/starter", ref = "main" }
 
 [dotfiles]
-"~/.bashrc/activate" = { block = 'eval "$(~/.local/bin/mise activate bash)"' }
+#"~/.bashrc/activate" = { block = 'eval "$(~/.local/bin/mise activate bash)"' }
 "~/.config/git" = {}
 "~/.config/herdr/config.toml" = {}
 "~/.config/mise" = {}
 "~/.config/nvim/lazyvim.json" = {}
 "~/.config/opencode/opencode.jsonc" = {}
 "~/.config/quadctl" = {}
+
+[bootstrap.mise_shell_activate]
+bashrc = "activate"
