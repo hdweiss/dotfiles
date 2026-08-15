@@ -33,6 +33,10 @@ ga = "git add -p"
 gr = "git remote"
 gre = "git reset"
 
+[bootstrap.repos]
+"~/.dotfiles" = { url = "https://github.com/hdweiss/dotfiles.git", ref = "master" }
+"~/.config/nvim" = { url = "https://github.com/LazyVim/starter", ref = "main" }
+
 [dotfiles]
 "~/.config/git" = {}
 "~/.config/herdr/config.toml" = {}
