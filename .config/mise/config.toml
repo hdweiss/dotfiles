@@ -5,7 +5,6 @@ gh = "latest"
 herdr = "latest"
 lazygit = "latest"
 neovim = "latest"
-podman = { version = "latest", rename_exe = "podman-remote" }
 ripgrep = "latest"
 
 [env]
@@ -38,9 +37,10 @@ gre = "git reset"
 "~/.config/nvim" = { url = "https://github.com/LazyVim/starter", ref = "main" }
 
 [dotfiles]
+"~/.bashrc/activate" = { block = 'eval "$(~/.local/bin/mise activate bash)"' }
 "~/.config/git" = {}
 "~/.config/herdr/config.toml" = {}
+"~/.config/mise" = {}
+"~/.config/nvim/lazyvim.json" = {}
 "~/.config/opencode/opencode.jsonc" = {}
 "~/.config/quadctl" = {}
-"~/.config/mise" = {}
-"~/.bashrc/activate" = { block = 'eval "$(~/.local/bin/mise activate bash)"' } 
