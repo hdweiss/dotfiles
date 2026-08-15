@@ -33,7 +33,7 @@ gr = "git remote"
 gre = "git reset"
 
 [bootstrap.repos]
-"~/.dotfiles" = { url = "https://github.com/hdweiss/dotfiles.git", ref = "master" }
+"~/.dotfiles" = { url = "https://github.com/hdweiss/dotfiles.git", ref = "main" }
 "~/.config/nvim" = { url = "https://github.com/LazyVim/starter", ref = "main" }
 
 [dotfiles]

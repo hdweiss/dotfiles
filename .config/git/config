@@ -1,3 +1,6 @@
 [user]
 	name = Henning Weiss
-	email = hdweiss@gmail.com
+  email = hdweiss@gmail.com
+
+[init]
+  defaultBranch = main
