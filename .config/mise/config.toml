@@ -2,8 +2,10 @@
 bat = "latest"
 fd = "latest"
 gh = "latest"
+"github:agavra/tuicr" = "latest"
 herdr = "latest"
 lazygit = "latest"
+markdownlint-cli2 = "latest"
 neovim = "latest"
 ripgrep = "latest"
 
@@ -37,7 +39,7 @@ gre = "git reset"
 "~/.config/nvim" = { url = "https://github.com/LazyVim/starter", ref = "main" }
 
 [dotfiles]
-#"~/.bashrc/activate" = { block = 'eval "$(~/.local/bin/mise activate bash)"' }
+"~/.bashrc/activate" = { block = 'eval "$(~/.local/bin/mise activate bash)"' }
 "~/.config/git" = {}
 "~/.config/herdr/config.toml" = {}
 "~/.config/mise" = {}
@@ -46,4 +48,4 @@ gre = "git reset"
 "~/.config/quadctl" = {}
 
 [bootstrap.mise_shell_activate]
-bashrc = "activate"
+#bashrc = "activate"
