@@ -6,5 +6,5 @@ These are the ~/.config files from my machine.
 ```bash
 curl https://mise.run | sh
 git clone https://github.com/hdweiss/dotfiles.git ~/.dotfiles
-mise bootstrap dotfiles apply
+mise bootstrap
 ```
