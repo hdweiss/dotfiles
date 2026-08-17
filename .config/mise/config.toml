@@ -40,6 +40,7 @@ gre = "git reset"
 
 [dotfiles]
 "~/.bashrc/activate" = { block = 'eval "$(~/.local/bin/mise activate bash)"' }
+"~/.claude/themes/catppuccin-frappe.json" = {}
 "~/.config/git" = {}
 "~/.config/herdr/config.toml" = {}
 "~/.config/mise" = {}

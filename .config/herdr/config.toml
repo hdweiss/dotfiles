@@ -1,12 +1,15 @@
 onboarding = false
 
-[ui]
-show_agent_labels_on_pane_borders = true
+[worktrees]
+directory = "~/.local/worktrees"
 
-agent_panel_sort = "spaces"
 [theme]
 name = "catppuccin"
 auto_switch = false
 
-[worktrees]
-directory = "~/.local/worktrees"
+[ui]
+show_agent_labels_on_pane_borders = false
+agent_panel_sort = "spaces"
+
+[ui.toast]
+delivery = "terminal"
