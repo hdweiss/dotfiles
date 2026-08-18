@@ -16,6 +16,7 @@ PI_CODING_AGENT_DIR = "~/.config/pi"
 [shell_alias]
 less = "bat"
 cat = "bat -pP"
+cd = "z"
 
 v = "nvim"
 vi = "nvim"
