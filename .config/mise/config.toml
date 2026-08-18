@@ -8,6 +8,7 @@ lazygit = "latest"
 markdownlint-cli2 = "latest"
 neovim = "latest"
 ripgrep = "latest"
+zoxide = "latest"
 
 [env]
 PI_CODING_AGENT_DIR = "~/.config/pi"
@@ -40,6 +41,7 @@ gre = "git reset"
 
 [dotfiles]
 "~/.bashrc/activate" = { block = 'eval "$(~/.local/bin/mise activate bash)"' }
+"~/.bashrc/zoxide" = { block = '"$(zoxide init bash)"' }
 "~/.claude/themes/catppuccin-frappe.json" = {}
 "~/.config/git" = {}
 "~/.config/herdr/config.toml" = {}
