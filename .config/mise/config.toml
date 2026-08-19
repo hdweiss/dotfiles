@@ -43,6 +43,17 @@ gre = "git reset"
 [dotfiles]
 "~/.bashrc/activate" = { block = 'eval "$(~/.local/bin/mise activate bash)"' }
 "~/.bashrc/zoxide" = { block = 'eval "$(zoxide init bash)"' }
+"~/.bashrc/claude" = { block = '''
+_claude_inline() {
+  if [ -t 0 ]; then
+    claude -p "$*" --model claude-haiku-4-5
+  else
+    claude -p "$*" --model claude-haiku-4-5 < /dev/stdin
+  fi
+}
+alias '??'='_claude_inline'
+'''
+}
 "~/.claude/themes/catppuccin-frappe.json" = {}
 "~/.config/git" = {}
 "~/.config/herdr/config.toml" = {}
