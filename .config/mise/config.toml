@@ -22,7 +22,6 @@ vi = "nvim"
 
 [bootstrap.repos]
 "~/.dotfiles" = { url = "https://github.com/hdweiss/dotfiles.git", ref = "main" }
-"~/.config/nvim" = { url = "https://github.com/LazyVim/starter", ref = "main" }
 
 [dotfiles]
 "~/.bashrc/activate" = { block = 'eval "$(~/.local/bin/mise activate bash)"' }
