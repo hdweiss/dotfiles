@@ -1,5 +1,4 @@
 [tools]
-claude = "latest"
 herdr = "latest"
 
 [env]
