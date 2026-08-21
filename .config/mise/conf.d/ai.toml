@@ -1,0 +1,21 @@
+[tools]
+claude = "latest"
+herdr = "latest"
+
+[env]
+PI_CODING_AGENT_DIR = "~/.config/pi"
+
+[dotfiles]
+"~/.config/herdr/config.toml" = {}
+"~/.claude/themes/catppuccin-frappe.json" = {}
+"~/.bashrc/claude" = { block = '''
+_claude_inline() {
+  if [ -t 0 ]; then
+    claude -p "$*" --model claude-haiku-4-5
+  else
+    claude -p "$*" --model claude-haiku-4-5 < /dev/stdin
+  fi
+}
+alias '??'='_claude_inline'
+'''
+}

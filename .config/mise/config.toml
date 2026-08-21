@@ -2,39 +2,17 @@
 bat = "latest"
 fd = "latest"
 gh = "latest"
-"github:agavra/tuicr" = "latest"
-herdr = "latest"
-lazygit = "latest"
 markdownlint-cli2 = "latest"
 neovim = "latest"
 ripgrep = "latest"
 zoxide = "latest"
 
-[env]
-PI_CODING_AGENT_DIR = "~/.config/pi"
-
 [shell_alias]
 less = "bat"
 cat = "bat -pP"
 cd = "z"
-
 v = "nvim"
 vi = "nvim"
-
-gc = "git commit -m"
-gca = "git commit -a -m"
-gp = "git push origin HEAD"
-gpu = "git pull origin"
-gst = "git status"
-glog = "git log --graph --topo-order --pretty='%w(100,0,6)%C(yellow)%h%C(bold)%C(black)%d %C(cyan)%ar %C(green)%an%n%C(bold)%C(white)%s %N' --abbrev-commit"
-gdiff = "git diff"
-gco = "git checkout"
-gb = "git branch"
-gba = "git branch -a"
-gadd = "git add"
-ga = "git add -p"
-gr = "git remote"
-gre = "git reset"
 
 [bootstrap.repos]
 "~/.dotfiles" = { url = "https://github.com/hdweiss/dotfiles.git", ref = "main" }
@@ -42,27 +20,9 @@ gre = "git reset"
 
 [dotfiles]
 "~/.bashrc/activate" = { block = 'eval "$(~/.local/bin/mise activate bash)"' }
-"~/.bashrc/claude" = { block = '''
-_claude_inline() {
-  if [ -t 0 ]; then
-    claude -p "$*" --model claude-haiku-4-5
-  else
-    claude -p "$*" --model claude-haiku-4-5 < /dev/stdin
-  fi
-}
-alias '??'='_claude_inline'
-'''
-}
 "~/.bashrc/zoxide" = { block = 'eval "$(zoxide init bash)"' }
-"~/.claude/themes/catppuccin-frappe.json" = {}
-"~/.config/git" = {}
-"~/.config/herdr/config.toml" = {}
 "~/.config/markdownlint-cli2/config.jsonc" = {}
-"~/.config/mise" = {}
+"~/.config/mise" = { mode = "symlink-each" }
 "~/.config/nvim/lazyvim.json" = {}
 "~/.config/nvim/lua/plugins/lint.lua" = {}
-"~/.config/opencode/opencode.jsonc" = {}
-"~/.config/quadctl" = {}
 
-[bootstrap.mise_shell_activate]
-#bashrc = "activate"

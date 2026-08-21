@@ -1,0 +1,21 @@
+[tools]
+lazygit = "latest"
+
+[shell_alias]
+gc = "git commit -m"
+gca = "git commit -a -m"
+gp = "git push origin HEAD"
+gpu = "git pull origin"
+gst = "git status"
+glog = "git log --graph --topo-order --pretty='%w(100,0,6)%C(yellow)%h%C(bold)%C(black)%d %C(cyan)%ar %C(green)%an%n%C(bold)%C(white)%s %N' --abbrev-commit"
+gdiff = "git diff"
+gco = "git checkout"
+gb = "git branch"
+gba = "git branch -a"
+gadd = "git add"
+ga = "git add -p"
+gr = "git remote"
+gre = "git reset"
+
+[dotfiles]
+"~/.config/git/ignore" = {}
