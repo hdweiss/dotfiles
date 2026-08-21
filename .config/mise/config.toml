@@ -29,6 +29,5 @@ vi = "nvim"
 "~/.bashrc/zoxide" = { block = 'eval "$(zoxide init bash)"' }
 "~/.config/markdownlint-cli2/config.jsonc" = {}
 "~/.config/mise" = { mode = "symlink-each" }
-"~/.config/nvim/lazyvim.json" = {}
-"~/.config/nvim/lua/plugins/lint.lua" = {}
+"~/.config/nvim" = { mode = "symlink-each" }
 
