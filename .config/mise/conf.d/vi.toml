@@ -1,0 +1,13 @@
+[tools]
+neovim = "latest"
+
+[shell_alias]
+v = "nvim"
+vi = "nvim"
+
+[env]
+EDITOR = "nvim"
+
+[dotfiles]
+"~/.config/nvim" = { mode = "symlink-each" }
+"~/.bashrc/vi" = { block = "set -o vi" }

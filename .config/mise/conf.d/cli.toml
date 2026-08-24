@@ -4,7 +4,6 @@ eza = "latest"
 fd = "latest"
 gh = "latest"
 markdownlint-cli2 = "latest"
-neovim = "latest"
 ripgrep = "latest"
 zoxide = "latest"
 
@@ -17,9 +16,6 @@ l = "eza -l --icons --git -a"
 lt = "eza --tree --level=2 --long --icons --git"
 ltree = "eza --tree --level=2  --icons --git"
 
-v = "nvim"
-vi = "nvim"
-
 [bootstrap.repos]
 "~/.dotfiles" = { url = "https://github.com/hdweiss/dotfiles.git", ref = "main" }
 
@@ -28,5 +24,3 @@ vi = "nvim"
 "~/.bashrc/zoxide" = { block = 'eval "$(zoxide init bash)"' }
 "~/.config/markdownlint-cli2/config.jsonc" = {}
 "~/.config/mise" = { mode = "symlink-each" }
-"~/.config/nvim" = { mode = "symlink-each" }
-
