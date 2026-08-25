@@ -1,5 +1,5 @@
 [tools]
-herdr = { version = "latest", postinstall = "herdr plugin install aimdevlee/herdr-nvim-nav --yes" }
+herdr = { version = "latest" }
 
 [env]
 PI_CODING_AGENT_DIR = "~/.config/pi"
