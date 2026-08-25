@@ -1,5 +1,5 @@
 [tools]
-herdr = "latest"
+herdr = { version = "latest", postinstall = "herdr plugin install aimdevlee/herdr-nvim-nav --yes" }
 
 [env]
 PI_CODING_AGENT_DIR = "~/.config/pi"
@@ -16,5 +16,4 @@ _claude_inline() {
   fi
 }
 alias '??'='_claude_inline'
-'''
-}
+''' }
