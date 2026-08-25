@@ -18,7 +18,6 @@ ltree = "eza --tree --level=2  --icons --git"
 
 [bootstrap.repos]
 "~/.dotfiles" = { url = "https://github.com/hdweiss/dotfiles.git", ref = "main" }
-"~/.tmux/plugins/tpm" = { url = "https://github.com/tmux-plugins/tpm", ref = "master" }
 
 [dotfiles]
 "~/.bashrc/activate" = { block = 'eval "$(~/.local/bin/mise activate bash)"' }
