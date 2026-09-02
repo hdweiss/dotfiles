@@ -10,4 +10,4 @@ EDITOR = "nvim"
 
 [dotfiles]
 "~/.config/nvim" = { mode = "symlink-each" }
-"~/.bashrc/vi" = { block = "set -o vi" }
+#"~/.bashrc/vi" = { block = "set -o vi" }
