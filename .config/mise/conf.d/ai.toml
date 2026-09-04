@@ -1,6 +1,10 @@
 [tools]
 herdr = { version = "latest" }
 
+[bootstrap.packages]
+"apt:bubblewrap" = "latest"
+"apt:socat" = "latest"
+
 [env]
 PI_CODING_AGENT_DIR = "~/.config/pi"
 
