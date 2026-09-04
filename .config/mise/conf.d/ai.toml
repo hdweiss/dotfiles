@@ -5,6 +5,9 @@ herdr = { version = "latest" }
 "apt:bubblewrap" = "latest"
 "apt:socat" = "latest"
 
+"pacman:bubblewrap" = "latest"
+"pacman:socat" = "latest"
+
 [env]
 PI_CODING_AGENT_DIR = "~/.config/pi"
 
