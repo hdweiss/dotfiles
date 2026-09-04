@@ -1,3 +1,5 @@
 **/.claude/settings.local.json
 /lazyvim.json
 /lazy-lock.json
+
+**/.claude/.cc-writes/
