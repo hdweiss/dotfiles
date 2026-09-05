@@ -1,0 +1,10 @@
+[font]
+base-size = 12
+
+# Bar height must land on a whole physical pixel at this display's scale.
+# eDP-1 runs scale 1.6 (= 8/5), so the logical height must be a multiple of 5
+# or the bar's bottom edge and the window's top edge round to different
+# physical rows, leaving a 1px background seam that flickers on repaint.
+# 26 -> 41.6px (bad); 25 -> 40.0px (exact).
+[bar]
+size-horizontal = 25

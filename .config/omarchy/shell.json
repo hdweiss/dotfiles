@@ -1,0 +1,123 @@
+{
+  "version": 1,
+  "idle": {
+    "screensaver": 150,
+    "lock": 300
+  },
+  "bar": {
+    "position": "top",
+    "transparent": false,
+    "centerAnchor": "omarchy.clock",
+    "layout": {
+      "left": [
+        {
+          "id": "omarchy.menu"
+        },
+        {
+          "id": "omarchy.workspaces"
+        },
+        {
+          "id": "quickshell.spotify",
+          "deviceName": "Omarchy Spotify",
+          "idleShutdownMinutes": 15,
+          "showMiniPlayer": "On",
+          "shortcutPlayer": "Mini player",
+          "shortcutHints": "Off",
+          "showTrackTitle": "Off",
+          "showArtistName": "Off",
+          "showPausedTrack": "On",
+          "scrollBarText": "Off",
+          "scrollSpeed": "1",
+          "maxBarTextWidth": "240",
+          "audioQuality": "320 kbps"
+        },
+        {
+          "id": "io.github.moizibnyousaf.omawhatsapp"
+        },
+        {
+          "id": "omamail",
+          "refreshIntervalSec": 120,
+          "maxMessages": 25,
+          "heavyMessageRendering": "Show plain text first",
+          "contentDirection": "Auto",
+          "defaultQuery": "in:inbox",
+          "notifyNewMail": "Off",
+          "oauthPort": 9481,
+          "undoSendSeconds": 10,
+          "unifiedCalendarView": true
+        },
+        {
+          "id": "apsingh.super-productivity"
+        },
+        {
+          "id": "io.github.weedwhitesandwine.obsiduous"
+        }
+      ],
+      "center": [
+        {
+          "id": "omarchy.indicators"
+        },
+        {
+          "id": "omarchy.clock",
+          "format": "h:mm AP",
+          "formatAlt": "d MMMM 'W'ww yyyy",
+          "verticalFormat": "HH\n—\nmm",
+          "birthYear": 1987,
+          "lifeExpectancy": 80
+        },
+        {
+          "id": "promaa.clock",
+          "birthYear": 1987,
+          "lifeExpectancy": 90,
+          "weekStartDay": "monday",
+          "format": "dddd HH:mm",
+          "clockHourCycle": 24
+        },
+        {
+          "id": "omarchy.keyboard-layout"
+        },
+        {
+          "id": "omarchy.weather"
+        },
+        {
+          "id": "omarchy.system-update"
+        }
+      ],
+      "right": [
+        {
+          "id": "omarchy.agents"
+        },
+        {
+          "id": "omarchy.tray"
+        },
+        {
+          "id": "io.github.ilyazar.syncthing"
+        },
+        {
+          "id": "omarchy.tailscale"
+        },
+        {
+          "id": "omarchy.bluetooth"
+        },
+        {
+          "id": "omarchy.network"
+        },
+        {
+          "id": "omarchy.audio"
+        },
+        {
+          "id": "omarchy.monitor"
+        },
+        {
+          "id": "omarchy.power",
+          "showPercentage": false
+        }
+      ]
+    }
+  },
+  "plugins": [
+    {
+      "id": "io.github.moizibnyousaf.omawhatsapp"
+    }
+  ]
+}
