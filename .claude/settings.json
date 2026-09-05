@@ -21,7 +21,7 @@
     "disableBypassPermissionsMode": "disable",
     "blockReadsOutsideWorkingDirectories": true
   },
-  "model": "opus",
+  "model": "sonnet",
   "disableRemoteControl": true,
   "sandbox": {
     "enabled": true,
