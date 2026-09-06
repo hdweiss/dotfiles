@@ -21,7 +21,7 @@
     "disableBypassPermissionsMode": "disable",
     "blockReadsOutsideWorkingDirectories": true
   },
-  "model": "sonnet",
+  "model": "opus",
   "disableRemoteControl": true,
   "sandbox": {
     "enabled": true,
@@ -30,5 +30,5 @@
     "allowUnsandboxedCommands": false
   },
   "spinnerTipsEnabled": false,
-  "theme": "custom:catppuccin-frappe"
+  "theme": "custom:omarchy"
 }

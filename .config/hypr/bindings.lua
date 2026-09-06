@@ -69,4 +69,5 @@ hl.unbind("SUPER + SHIFT + P")
 o.bind("SUPER + SHIFT + P", "Immich", 'omarchy-launch-webapp "https://photos.weisz.it"')
 
 -- Unused apps
+hl.unbind("SUPER + SHIFT + X") -- was X webapp
 hl.unbind("SUPER + SHIFT + ALT + X") -- was X webapp

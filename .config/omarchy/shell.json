@@ -1,8 +1,8 @@
 {
   "version": 1,
   "idle": {
-    "screensaver": 150,
-    "lock": 300
+    "screensaver": 900,
+    "lock": 900
   },
   "bar": {
     "position": "top",
@@ -60,10 +60,12 @@
         {
           "id": "promaa.clock",
           "birthYear": 1987,
-          "lifeExpectancy": 90,
-          "weekStartDay": "monday",
+          "clockHourCycle": 24,
           "format": "dddd HH:mm",
-          "clockHourCycle": 24
+          "lifeExpectancy": 90,
+          "notifyMinutesBefore": 5,
+          "weekStartDay": "sunday",
+          "notifyUpcomingEvents": true
         },
         {
           "id": "omarchy.keyboard-layout"
