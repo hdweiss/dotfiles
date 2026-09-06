@@ -1,5 +1,7 @@
 
 [dotfiles]
+"~/.config/hypr/autostart.lua" = {}
 "~/.config/hypr/bindings.lua" = {}
+"~/.config/hypr/hyprsunset.conf" = {}
 "~/.config/omarchy/shell.json" = {}
 "~/.config/omarchy/shell.toml" = {}

@@ -64,8 +64,8 @@
           "format": "dddd HH:mm",
           "lifeExpectancy": 90,
           "notifyMinutesBefore": 5,
-          "weekStartDay": "sunday",
-          "notifyUpcomingEvents": true
+          "notifyUpcomingEvents": true,
+          "weekStartDay": "monday"
         },
         {
           "id": "omarchy.keyboard-layout"
