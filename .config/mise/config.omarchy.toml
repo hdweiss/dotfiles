@@ -1,0 +1,5 @@
+
+[dotfiles]
+"~/.config/hypr/bindings.lua" = {}
+"~/.config/omarchy/shell.json" = {}
+"~/.config/omarchy/shell.toml" = {}

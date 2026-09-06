@@ -16,6 +16,7 @@ PI_CODING_AGENT_DIR = "~/.config/pi"
 
 "~/.claude/settings.json" = {}
 "~/.claude/themes/catppuccin-frappe.json" = {}
+"~/.claude/themes/omarchy.json" = {}
 
 "~/.bashrc/claude" = { block = '''
 _claude_inline() {
