@@ -1,0 +1,21 @@
+#!/bin/bash
+
+# Restart hyprsunset after every resume from suspend, so it re-reads the clock
+# and applies the profile from ~/.config/hypr/hyprsunset.conf that matches the
+# current time. hyprsunset's own timer doesn't count time spent suspended, so
+# without this the scheduled switches drift or never fire.
+# Run by ~/.config/systemd/user/hyprsunset-resume.service.
+
+dbus-monitor --system \
+  "type='signal',sender='org.freedesktop.login1',interface='org.freedesktop.login1.Manager',member='PrepareForSleep'" |
+  while IFS= read -r line; do
+    # PrepareForSleep(false) is sent on resume
+    if [[ $line == *"boolean false"* ]]; then
+      sleep 2
+      # Not omarchy-restart-hyprsunset: it relaunches before the old process
+      # has exited, and the new one dies on the still-present socket
+      pkill -x hyprsunset
+      while pgrep -x hyprsunset >/dev/null; do sleep 0.2; done
+      setsid uwsm-app -- hyprsunset >/dev/null 2>&1 &
+    fi
+  done

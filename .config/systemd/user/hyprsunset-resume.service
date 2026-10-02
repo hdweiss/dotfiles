@@ -1,0 +1,15 @@
+[Unit]
+Description=Restart hyprsunset after resume so the night light schedule stays on time
+After=dbus.socket wayland-session-waitenv.service
+Requires=dbus.socket
+PartOf=graphical-session.target
+ConditionEnvironment=WAYLAND_DISPLAY
+
+[Service]
+Type=simple
+ExecStart=%h/.local/bin/hyprsunset-resume-restart
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=graphical-session.target

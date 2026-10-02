@@ -50,6 +50,7 @@
 
 -- Faster two-finger scrolling in Omamail.
 o.window({ class = "^org\\.quickshell$", title = "^Omamail$" }, { scroll_touchpad = 2.0 })
+o.window({ class = "^org\\.quickshell$", title = "^OmaWhatsApp$" }, { scroll_touchpad = 2.0 })
 
 -- Enable touchpad gestures for changing workspaces.
 -- See https://wiki.hypr.land/Configuring/Advanced-and-Cool/Gestures/
@@ -64,5 +65,17 @@ hl.config({
   input = {
     kb_layout = "us,de,dk",
     kb_variant = ",,",
+  },
+})
+
+-- Cycle us -> de -> dk with Left Alt + Right Alt. The bar widget's click picks
+-- the wrong device on this laptop (it treats ideapad-extra-buttons and the
+-- WH-1000XM5 AVRCP surface as typable keyboards), so switch at the xkb level
+-- instead: grp:alts_toggle moves the group on whichever keyboard sent the
+-- keystroke, which is always the real one. Keep Omarchy's compose:caps and
+-- shift:both_capslock_cancel -- they carry the ~/.XCompose sequences.
+hl.config({
+  input = {
+    kb_options = "compose:caps,shift:both_capslock_cancel,grp:alts_toggle",
   },
 })

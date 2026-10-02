@@ -1,0 +1,54 @@
+#!/bin/bash
+
+# Summon Zen to the current workspace.
+#   zen-summon              bring the existing Zen window here and focus it (launch if needed)
+#   zen-summon --preload    start Zen hidden on special:zen (for autostart)
+
+dispatch() {
+  hyprctl dispatch "$1" >/dev/null 2>&1 || hyprctl dispatch $2 >/dev/null 2>&1
+}
+
+# First non-PiP Zen window
+zen_window() {
+  hyprctl clients -j | jq -r '.[] | select(.class == "zen" and (.title | test("Picture.?in.?[Pp]icture") | not)) | .address' | head -n1
+}
+
+hide_zen() {
+  local address
+  for _ in $(seq 150); do
+    address=$(zen_window)
+    [[ -n $address ]] && break
+    sleep 0.2
+  done
+  [[ -z $address ]] && return 1
+
+  dispatch "hl.dsp.window.move({ workspace = \"special:zen\", follow = false, window = \"address:$address\" })" \
+    "movetoworkspacesilent special:zen,address:$address"
+}
+
+launch_zen() {
+  systemd-run --user --quiet --collect --unit="zen-summon-$(date +%s%N)" \
+    --property=StandardOutput=null --property=StandardError=null \
+    uwsm-app -- zen-browser
+}
+
+bring_here() {
+  local address=$1 workspace
+  workspace=$(hyprctl activeworkspace -j | jq -r '.id')
+
+  dispatch "hl.dsp.window.move({ workspace = \"$workspace\", window = \"address:$address\" })" \
+    "movetoworkspacesilent $workspace,address:$address"
+  dispatch "hl.dsp.focus({ window = \"address:$address\" })" "focuswindow address:$address"
+}
+
+if [[ $1 == --preload ]]; then
+  [[ -z $(zen_window) ]] && launch_zen
+  hide_zen
+else
+  address=$(zen_window)
+  if [[ -n $address ]]; then
+    bring_here "$address"
+  else
+    launch_zen
+  fi
+fi

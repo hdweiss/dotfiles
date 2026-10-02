@@ -1,0 +1,50 @@
+#!/bin/bash
+
+# Copy of bin/omarchy-theme-set-superproductivity from the add-super-productivity-theming branch,
+# run as a theme-set hook until that lands upstream.
+
+set -euo pipefail
+
+SOURCE_PATH="$HOME/.local/state/omarchy/current/theme/superproductivity.css"
+CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
+
+# Electron derives userData from package.json `name`, which Super Productivity
+# deliberately keeps at its historical camelCase spelling while presenting
+# "Super Productivity" to the desktop. The hyphenated directory beside it holds
+# the Arch launcher's flags file and is not the app's state, so the camelCase
+# one has to be tried first.
+USER_DATA_DIRS=(
+  "$CONFIG_HOME/superProductivity"
+  "$CONFIG_HOME/super-productivity"
+)
+
+[[ -f $SOURCE_PATH ]] || exit 0
+
+# A theme missing a colour this template needs leaves its placeholder
+# unresolved. Super Productivity would drop those declarations and paint half a
+# palette, so leave the stylesheet it already has in place instead.
+if grep -q '{{' "$SOURCE_PATH"; then
+  echo "Skipping Super Productivity theme: $(basename "$SOURCE_PATH") has unresolved colors." >&2
+  exit 0
+fi
+
+# Only follow an install that has already run once. Creating the directory here
+# would leave a stray Super Productivity state dir on machines that never open it.
+user_data_dir=""
+for candidate in "${USER_DATA_DIRS[@]}"; do
+  if [[ -d $candidate ]]; then
+    user_data_dir="$candidate"
+    break
+  fi
+done
+
+[[ -n $user_data_dir ]] || exit 0
+
+# Super Productivity reads this file once, when it creates its window, and
+# injects it with webContents.insertCSS(). Write it atomically so a launch
+# racing a theme switch cannot read a half-written stylesheet, and so the
+# palette lands whole on the next start.
+target="$user_data_dir/styles.css"
+tmp=$(mktemp "$target.XXXXXX")
+cp "$SOURCE_PATH" "$tmp"
+mv "$tmp" "$target"

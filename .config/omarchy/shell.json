@@ -21,15 +21,20 @@
           "deviceName": "Omarchy Spotify",
           "idleShutdownMinutes": 15,
           "showMiniPlayer": "On",
-          "shortcutPlayer": "Mini player",
-          "shortcutHints": "Off",
+          "showVinylRecord": "Off",
+          "shortcutPlayer": "Omarchy Music app",
+          "shortcutHints": "On",
+          "showLyrics": "On",
+          "showArtwork": "On",
           "showTrackTitle": "Off",
           "showArtistName": "Off",
           "showPausedTrack": "On",
           "scrollBarText": "Off",
           "scrollSpeed": "1",
           "maxBarTextWidth": "240",
-          "audioQuality": "320 kbps"
+          "fixedBarWidth": "Off",
+          "audioQuality": "320 kbps",
+          "clientId": ""
         },
         {
           "id": "io.github.moizibnyousaf.omawhatsapp"
@@ -58,13 +63,11 @@
           "id": "omarchy.indicators"
         },
         {
-          "id": "promaa.clock",
+          "id": "omarchy.clock",
           "birthYear": 1987,
           "clockHourCycle": 24,
           "format": "dddd HH:mm",
-          "lifeExpectancy": 90,
-          "notifyMinutesBefore": 5,
-          "notifyUpcomingEvents": true,
+          "lifeExpectancy": 80,
           "weekStartDay": "monday"
         },
         {
@@ -79,16 +82,30 @@
       ],
       "right": [
         {
+          "id": "andreasbylund.jellyfin",
+          "showBarTitle": false,
+          "albumArtistsOnly": true
+        },
+        {
           "id": "omarchy.agents"
         },
         {
           "id": "omarchy.tray"
         },
         {
-          "id": "io.github.ilyazar.syncthing"
+          "id": "io.github.elevate08.qs-bitwarden-cli",
+          "colorizeIcon": false,
+          "closeOnCopy": true,
+          "autoLockMinutes": 0,
+          "clearClipboardSec": 120,
+          "lockOnScreenLock": false,
+          "lockOnSuspend": false
         },
         {
           "id": "omarchy.tailscale"
+        },
+        {
+          "id": "io.github.ilyazar.syncthing"
         },
         {
           "id": "omarchy.bluetooth"

@@ -1,0 +1,24 @@
+#!/bin/bash
+
+# Super+W: close the active window, except the last Zen window, which is hidden
+# on special:zen so zen-summon can bring it back without a cold start.
+
+dispatch() {
+  hyprctl dispatch "$1" >/dev/null 2>&1 || hyprctl dispatch $2 >/dev/null 2>&1
+}
+
+active=$(hyprctl activewindow -j)
+class=$(jq -r '.class // empty' <<<"$active")
+title=$(jq -r '.title // empty' <<<"$active")
+address=$(jq -r '.address // empty' <<<"$active")
+
+if [[ $class == zen && ! $title =~ Picture.?in.?[Pp]icture ]]; then
+  zen_windows=$(hyprctl clients -j | jq '[.[] | select(.class == "zen" and (.title | test("Picture.?in.?[Pp]icture") | not))] | length')
+  if ((zen_windows == 1)); then
+    dispatch "hl.dsp.window.move({ workspace = \"special:zen\", follow = false, window = \"address:$address\" })" \
+      "movetoworkspacesilent special:zen,address:$address"
+    exit
+  fi
+fi
+
+dispatch "hl.dsp.window.close()" "killactive"

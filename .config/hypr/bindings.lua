@@ -68,6 +68,20 @@ o.bind("SUPER + SHIFT + ALT + O", "Obsidian (app)", { launch = "obsidian", focus
 hl.unbind("SUPER + SHIFT + P")
 o.bind("SUPER + SHIFT + P", "Immich", 'omarchy-launch-webapp "https://photos.weisz.it"')
 
+--  Bitwarden
+o.bind("SUPER + CTRL + SLASH", "Bitwarden vault", "omarchy-shell io.github.elevate08.qs-bitwarden-cli toggle")
+
 -- Unused apps
 hl.unbind("SUPER + SHIFT + X") -- was X webapp
 hl.unbind("SUPER + SHIFT + ALT + X") -- was X webapp
+
+
+-- Bring Zen to the current workspace (preloaded at login, see autostart.lua)
+hl.unbind("SUPER + SHIFT + B")
+o.bind("SUPER + SHIFT + B", "Browser", os.getenv("HOME") .. "/.local/bin/zen-summon")
+hl.unbind("SUPER + SHIFT + RETURN")
+o.bind("SUPER + SHIFT + RETURN", "Browser", os.getenv("HOME") .. "/.local/bin/zen-summon")
+
+-- Super+W hides the last Zen window instead of quitting Zen (see close-or-hide)
+hl.unbind("SUPER + W")
+o.bind("SUPER + W", "Close window", os.getenv("HOME") .. "/.local/bin/close-or-hide")

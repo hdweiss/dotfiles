@@ -3,7 +3,7 @@ onboarding = false
 # tmux session -> herdr workspace, tmux window -> herdr tab, tmux pane -> herdr pane
 
 [worktrees]
-directory = "~/.local/worktrees"
+directory = "~/Projects"
 
 [theme]
 # tmux ran on the terminal's own palette (bg=default, fg=default, ANSI blue accents)

@@ -1,0 +1,33 @@
+#!/bin/bash
+
+# Restart a running Super Productivity so it picks up the styles.css that the
+# 10-superproductivity hook just wrote; the app only reads it at window creation.
+# The numeric prefixes make it run after that hook, since hooks run in glob
+# order. Delete this file to stop the restarts.
+
+# The launcher execs Electron, so match the app bundle path, not a process name.
+# Only the main process lacks a --type= flag; its helpers exit along with it.
+APP_PATTERN='super-productivity/app\.asar'
+
+main_pids() {
+  pgrep -f "$APP_PATTERN" | while read -r pid; do
+    tr '\0' ' ' <"/proc/$pid/cmdline" 2>/dev/null | grep -q -- '--type=' || echo "$pid"
+  done
+}
+
+pids=$(main_pids)
+[[ -n $pids ]] || exit 0
+
+source "$HOME/.config/omarchy/hooks/lib/relaunch-on-workspace.sh"
+workspace=$(window_workspace superproductivity)
+
+kill $pids 2>/dev/null
+
+# Super Productivity holds a single-instance lock, so a launch while the old
+# process is still shutting down would just hand off to it and quit.
+for _ in {1..50}; do
+  [[ -z $(main_pids) ]] && break
+  sleep 0.1
+done
+
+relaunch_on_workspace superproductivity "$workspace" super-productivity

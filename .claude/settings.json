@@ -27,8 +27,20 @@
     "enabled": true,
     "failIfUnavailable": true,
     "autoAllowBashIfSandboxed": true,
-    "allowUnsandboxedCommands": false
+    "allowUnsandboxedCommands": false,
+    "filesystem": {
+      "allowRead": [
+        "~/.local/share/mise",
+        "~/.config/mise",
+        "~/.local/state/mise"
+      ]
+    }
   },
   "spinnerTipsEnabled": false,
-  "theme": "custom:omarchy"
+  "voice": {
+    "enabled": false,
+    "mode": "hold"
+  },
+  "theme": "custom:omarchy",
+  "voiceEnabled": false
 }

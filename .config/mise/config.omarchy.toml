@@ -4,5 +4,24 @@
 "~/.config/hypr/bindings.lua" = {}
 "~/.config/hypr/hyprsunset.conf" = {}
 "~/.config/hypr/input.lua" = {}
+"~/.config/hypr/looknfeel.lua" = {}
 "~/.config/omarchy/shell.json" = {}
 "~/.config/omarchy/shell.toml" = {}
+
+# Zen: Super+Shift+B summons it, Super+W hides the last window (bindings.lua)
+"~/.local/bin/zen-summon" = {}
+"~/.local/bin/close-or-hide" = {}
+
+# Keeps the hyprsunset.conf schedule on time after suspend.
+# Enable once: systemctl --user enable --now hyprsunset-resume
+"~/.local/bin/hyprsunset-resume-restart" = {}
+"~/.config/systemd/user/hyprsunset-resume.service" = {}
+
+# Theme templates and the theme-set hooks that apply them
+"~/.config/omarchy/themed/superfile.toml.tpl" = {}
+"~/.config/omarchy/themed/superproductivity.css.tpl" = {}
+"~/.config/omarchy/themed/zen-browser.css.tpl" = {}
+"~/.config/omarchy/hooks/theme-set.d/10-superproductivity" = {}
+"~/.config/omarchy/hooks/theme-set.d/20-superproductivity-restart" = {}
+"~/.config/omarchy/hooks/theme-set.d/zen-browser" = {}
+"~/.config/omarchy/hooks/lib/relaunch-on-workspace.sh" = {}
