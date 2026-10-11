@@ -1,11 +1,414 @@
 #!/bin/bash
 
-# Copy of bin/omarchy-theme-set-zen-browser from the fix-zen-sidebar-theme branch,
-# run as a theme-set hook until that lands upstream.
+# Based on bin/omarchy-theme-set-zen-browser from the fix-zen-sidebar-theme
+# branch, run as a theme-set hook until that lands upstream.
+#
+# Local addition: live theme switching. This file also patches Zen's
+# browser/omni.ja with a small module (ZenLiveStylesheet.sys.mjs, embedded
+# below) that applies <profile>/chrome/zen-live.css on top of the Zen mods and
+# re-applies it whenever it changes. With that in place the theme goes to
+# zen-live.css and Zen no longer restarts; until then it falls back to
+# importing the theme from userChrome.css, which Zen only reads at startup.
+#
+# Patching writes to /opt, so it needs root:
+#   sudo zen-browser --install   patch Zen, and re-patch after every Zen update
+#                                with a pacman hook that runs this file
+#   sudo zen-browser --patch     patch Zen (what the pacman hook runs)
+#   sudo zen-browser --restore   undo the patch
+# A theme switch also patches Zen by itself when sudo needs no password.
+# Set ZEN_DIR to the Zen installation if it isn't in /opt or on $PATH.
 
 ZEN_THEME_CSS="$HOME/.local/state/omarchy/current/theme/zen-browser.css"
 ZEN_PROFILES_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/zen"
 USER_CHROME_IMPORT='@import url("omarchy.css");'
+
+MODULE_ENTRY=modules/zen/mods/ZenLiveStylesheet.sys.mjs
+ZEN_MODS_ENTRY=chrome/browser/content/browser/zen-components/ZenMods.mjs
+MODULE_URL=resource:///modules/zen/mods/ZenLiveStylesheet.sys.mjs
+PACMAN_HOOK=/etc/pacman.d/hooks/zen-live.hook
+
+self=$(readlink -f "$0")
+
+# === Patching Zen ===
+
+die() {
+  echo "zen-browser: $*" >&2
+  exit 1
+}
+
+# The directory holding Zen's browser/omni.ja.
+zen_dir() {
+  local candidate binary
+
+  [[ -n ${ZEN_DIR:-} ]] && echo "$ZEN_DIR" && return
+  for candidate in /opt/zen-browser-bin /opt/zen-browser; do
+    [[ -f $candidate/browser/omni.ja ]] && echo "$candidate" && return
+  done
+  for binary in zen-bin zen-browser zen; do
+    command -v "$binary" >/dev/null || continue
+    candidate=$(dirname "$(readlink -f "$(command -v "$binary")")")
+    [[ -f $candidate/browser/omni.ja ]] && echo "$candidate" && return
+  done
+  return 1
+}
+
+zen_is_patched() {
+  local dir
+
+  dir=$(zen_dir) || return 1
+  if command -v unzip >/dev/null; then
+    unzip -Z1 "$dir/browser/omni.ja" 2>/dev/null | grep -qx "$MODULE_ENTRY"
+  else
+    bsdtar -tf "$dir/browser/omni.ja" 2>/dev/null | grep -qx "$MODULE_ENTRY"
+  fi
+}
+
+extract_omni() {
+  local omni="$1" dir="$2" status=0
+
+  if command -v unzip >/dev/null; then
+    # omni.ja is an "optimized" jar, which unzip warns about (exit code 1).
+    unzip -q "$omni" -d "$dir" 2>/dev/null || status=$?
+    ((status <= 1)) || die "could not extract $omni"
+  else
+    bsdtar -xf "$omni" -C "$dir" || die "could not extract $omni"
+  fi
+}
+
+archive_omni() {
+  local dir="$1" out="$2"
+
+  if command -v zip >/dev/null; then
+    (cd "$dir" && zip -qr0XD "$out" .)
+  else
+    (cd "$dir" && bsdtar --format zip --options zip:compression=store -cf "$out" .)
+  fi
+}
+
+# Zen caches its JS at startup. A Zen update invalidates the cache, but a patch
+# of the same version doesn't, so clear it for the user running sudo.
+purge_startup_cache() {
+  local home
+
+  [[ -n ${SUDO_USER:-} ]] || return 0
+  home=$(getent passwd "$SUDO_USER" | cut -d: -f6)
+  rm -rf "$home"/.cache/zen/*/startupCache
+}
+
+patch_zen() {
+  local dir omni work zen_mods
+
+  dir=$(zen_dir) || die "no Zen installation found"
+  omni="$dir/browser/omni.ja"
+
+  if zen_is_patched; then
+    echo "zen-browser: $omni is already patched"
+    return
+  fi
+  [[ -w $dir/browser ]] || die "cannot write $omni, run with sudo"
+
+  work=$(mktemp -d)
+  trap 'rm -rf "$work"' EXIT
+  extract_omni "$omni" "$work/omni"
+  zen_mods="$work/omni/$ZEN_MODS_ENTRY"
+
+  # ZenMods.mjs: apply the mods stylesheet through gZenLiveStylesheet, which
+  # appends zen-live.css to it, and start the file watcher.
+  grep -qF 'this.#modsBackend.rebuildModsStyles(content);' "$zen_mods" &&
+    grep -qF 'await SessionStore.promiseInitialized;' "$zen_mods" ||
+    die "unsupported ZenMods.mjs in this Zen version, $omni left unchanged"
+  sed -i \
+    -e "s|this\.#modsBackend\.rebuildModsStyles(content);|await ChromeUtils.importESModule(\"$MODULE_URL\").gZenLiveStylesheet.apply(content);|" \
+    -e "s|^\( *\)await SessionStore\.promiseInitialized;|&\n\1ChromeUtils.importESModule(\"$MODULE_URL\").gZenLiveStylesheet.init();|" \
+    "$zen_mods"
+  mkdir -p "$(dirname "$work/omni/$MODULE_ENTRY")"
+  write_live_stylesheet_module >"$work/omni/$MODULE_ENTRY"
+
+  archive_omni "$work/omni" "$work/omni.ja"
+  cp -p "$omni" "$omni.zen-live-orig"
+  # Rename into place: a running Zen keeps reading the old file.
+  cp "$work/omni.ja" "$omni.zen-live-new"
+  chmod 644 "$omni.zen-live-new"
+  mv "$omni.zen-live-new" "$omni"
+  purge_startup_cache
+  echo "zen-browser: patched $omni, restart Zen to load it"
+}
+
+restore_zen() {
+  local dir omni
+
+  dir=$(zen_dir) || die "no Zen installation found"
+  omni="$dir/browser/omni.ja"
+  # An update replaces omni.ja and leaves the backup of the old version behind.
+  zen_is_patched || die "$omni is not patched"
+  [[ -f $omni.zen-live-orig ]] || die "no backup at $omni.zen-live-orig"
+  mv "$omni.zen-live-orig" "$omni"
+  purge_startup_cache
+  echo "zen-browser: restored $omni, restart Zen to load it"
+}
+
+install_pacman_hook() {
+  mkdir -p "$(dirname "$PACMAN_HOOK")"
+  cat >"$PACMAN_HOOK" <<EOF
+# Installed by $self --install.
+# Zen updates replace omni.ja, so patch it again for live theme switching.
+[Trigger]
+Operation = Install
+Operation = Upgrade
+Type = Package
+Target = zen-browser*
+
+[Action]
+Description = Patching Zen for live theme switching...
+When = PostTransaction
+Exec = $self --patch
+EOF
+  echo "zen-browser: installed $PACMAN_HOOK"
+}
+
+# From src/zen/mods/ZenLiveStylesheet.sys.mjs in zen-browser/desktop.
+write_live_stylesheet_module() {
+  cat <<'JS'
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this file,
+ * You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+const lazy = {};
+
+ChromeUtils.defineESModuleGetters(lazy, {
+  clearInterval: "resource://gre/modules/Timer.sys.mjs",
+  setInterval: "resource://gre/modules/Timer.sys.mjs",
+});
+
+const PREF_ENABLED = "zen.mods.live-stylesheet";
+const PREF_INTERVAL = "zen.mods.live-stylesheet.interval-ms";
+
+// `@import url("a.css");`, `@import url(a.css);` or `@import "a.css";`,
+// without media queries or layers.
+const IMPORT_RE =
+  /@import\s+(?:url\(\s*["']?([^"')\s]+)["']?\s*\)|["']([^"']+)["'])\s*;/g;
+const URL_SCHEME_RE = /^[a-z][a-z\d+.-]*:/i;
+
+/**
+ * Encodes a string as UTF-8, one byte per char. `rebuildModsStyles` takes an
+ * ACString, which keeps only the low byte of each char, so this is needed for
+ * non-ASCII CSS (e.g. `content: "→"`) to survive.
+ *
+ * @param {string} aString
+ * @returns {string}
+ */
+function toByteString(aString) {
+  const bytes = new TextEncoder().encode(aString);
+  let result = "";
+  for (let i = 0; i < bytes.length; i += 0x8000) {
+    result += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  }
+  return result;
+}
+
+/**
+ * Applies `<profile>/chrome/zen-live.css` to the browser UI on top of the
+ * Zen mods, and re-applies it whenever it or the local files it @import-s
+ * change on disk, so no restart is needed.
+ *
+ * Imports are inlined, since they have to come before every other rule and
+ * the mods stylesheet keeps imported sheets around when it's re-parsed.
+ * There is no cross-platform file watcher available to chrome code, so this
+ * polls the files' modification times.
+ */
+class nsZenLiveStylesheet {
+  #initialized = false;
+  #interval = null;
+  #polling = false;
+  // Path -> modification time when last applied, null if missing.
+  #mtimes = new Map();
+
+  get #modsBackend() {
+    return Cc["@mozilla.org/zen/mods-backend;1"].getService(
+      Ci.nsIZenModsBackend
+    );
+  }
+
+  get #enabled() {
+    return (
+      Services.prefs.getBoolPref(PREF_ENABLED, false) &&
+      !Services.appinfo.inSafeMode
+    );
+  }
+
+  get path() {
+    return PathUtils.join(PathUtils.profileDir, "chrome", "zen-live.css");
+  }
+
+  get #modsStylesheetPath() {
+    return PathUtils.join(PathUtils.profileDir, "chrome", "zen-themes.css");
+  }
+
+  init() {
+    if (this.#initialized) {
+      return;
+    }
+    this.#initialized = true;
+    Services.prefs.addObserver(PREF_ENABLED, this);
+    Services.prefs.addObserver(PREF_INTERVAL, this);
+    Services.obs.addObserver(this, "quit-application-granted");
+    this.#update();
+  }
+
+  observe(aSubject, aTopic) {
+    if (aTopic === "quit-application-granted") {
+      this.#stop();
+      Services.prefs.removeObserver(PREF_ENABLED, this);
+      Services.prefs.removeObserver(PREF_INTERVAL, this);
+      Services.obs.removeObserver(this, "quit-application-granted");
+      return;
+    }
+    this.#update();
+  }
+
+  /**
+   * Re-parses the mods stylesheet with the live stylesheet appended to it.
+   *
+   * @param {string|null} aModsContents The mods stylesheet contents, read
+   * from disk if not given.
+   */
+  async apply(aModsContents = null) {
+    let contents = aModsContents ?? (await this.#readModsStylesheet());
+    const files = new Map();
+    if (this.#enabled) {
+      contents += "\n" + (await this.#readInlined(this.path, files));
+    }
+    this.#mtimes = files;
+    this.#modsBackend.rebuildModsStyles(toByteString(contents));
+  }
+
+  async #update() {
+    this.#stop();
+    try {
+      await this.apply();
+    } catch (e) {
+      console.error("[ZenLiveStylesheet]: Error applying stylesheet:", e);
+    }
+    if (!this.#enabled || this.#interval) {
+      // Disabled, or a concurrent update already started polling.
+      return;
+    }
+    this.#interval = lazy.setInterval(
+      () => this.#poll(),
+      Math.max(Services.prefs.getIntPref(PREF_INTERVAL, 1000), 100)
+    );
+  }
+
+  #stop() {
+    if (this.#interval) {
+      lazy.clearInterval(this.#interval);
+      this.#interval = null;
+    }
+  }
+
+  async #readModsStylesheet() {
+    try {
+      return await IOUtils.readUTF8(this.#modsStylesheetPath);
+    } catch {
+      return "";
+    }
+  }
+
+  async #getModifiedTime(aPath) {
+    try {
+      return (await IOUtils.stat(aPath)).lastModified;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Reads a stylesheet with its local @import-s inlined, recording the
+   * modification time of every file read in `aFiles`.
+   *
+   * @param {string} aPath
+   * @param {Map<string, number|null>} aFiles
+   * @returns {Promise<string>}
+   */
+  async #readInlined(aPath, aFiles) {
+    if (aFiles.has(aPath)) {
+      // Already inlined, or an import cycle.
+      return "";
+    }
+    aFiles.set(aPath, await this.#getModifiedTime(aPath));
+    let contents;
+    try {
+      contents = await IOUtils.readUTF8(aPath);
+    } catch {
+      return "";
+    }
+
+    const dir = PathUtils.parent(aPath);
+    let result = "";
+    let last = 0;
+    for (const match of contents.matchAll(IMPORT_RE)) {
+      const url = match[1] ?? match[2];
+      result += contents.slice(last, match.index);
+      last = match.index + match[0].length;
+      let importPath = null;
+      if (!URL_SCHEME_RE.test(url)) {
+        try {
+          importPath = PathUtils.joinRelative(dir, url);
+        } catch {
+          // e.g. a path going up with "..".
+        }
+      }
+      result += importPath
+        ? await this.#readInlined(importPath, aFiles)
+        : match[0];
+    }
+    return result + contents.slice(last);
+  }
+
+  async #poll() {
+    if (this.#polling) {
+      return;
+    }
+    this.#polling = true;
+    try {
+      for (const [path, mtime] of this.#mtimes) {
+        const current = await this.#getModifiedTime(path);
+        // A file going missing is most likely an editor's atomic save in
+        // progress, so wait for it to come back.
+        if (current !== null && current !== mtime) {
+          await this.apply();
+          break;
+        }
+      }
+    } catch (e) {
+      console.error("[ZenLiveStylesheet]: Error reloading stylesheet:", e);
+    } finally {
+      this.#polling = false;
+    }
+  }
+}
+
+export const gZenLiveStylesheet = new nsZenLiveStylesheet();
+JS
+}
+
+case ${1:-} in
+--install)
+  install_pacman_hook
+  patch_zen
+  exit
+  ;;
+--patch)
+  patch_zen
+  exit
+  ;;
+--restore)
+  restore_zen
+  exit
+  ;;
+esac
+
+# === Applying the theme ===
 
 [[ -d $ZEN_PROFILES_DIR ]] || exit 0
 [[ -f $ZEN_THEME_CSS ]] || exit 0
@@ -24,6 +427,18 @@ ensure_user_chrome_import() {
   fi
 }
 
+# userChrome.css is applied after zen-live.css, so a stale import would win.
+remove_user_chrome_import() {
+  local user_chrome_css="$1"
+
+  [[ -f $user_chrome_css ]] || return 0
+  sed -i --follow-symlinks "\|^${USER_CHROME_IMPORT//./\\.}\$|d" "$user_chrome_css"
+}
+
+has_user_pref() {
+  grep -Fxq "user_pref(\"$2\", $3);" "$1" 2>/dev/null
+}
+
 ensure_user_pref() {
   local user_js="$1"
   local pref_name="$2"
@@ -37,6 +452,17 @@ ensure_user_pref() {
   else
     printf '\nuser_pref("%s", %s);\n' "$pref_name" "$pref_value" >>"$user_js"
   fi
+}
+
+# Zen polls zen-live.css for changes, so replace it whole: a half-written file
+# would be applied for a moment.
+write_atomically() {
+  local source="$1" target="$2" temp_file
+
+  temp_file=$(mktemp "$target.XXXXXX")
+  cp "$source" "$temp_file"
+  chmod 644 "$temp_file"
+  mv "$temp_file" "$target"
 }
 
 restart_zen() {
@@ -65,18 +491,47 @@ restart_zen() {
   fi
 }
 
+live_reload=false
+needs_restart=false
+
+if zen_is_patched; then
+  live_reload=true
+elif zen_dir >/dev/null && sudo -n "$self" --patch >/dev/null 2>&1; then
+  # Patched just now, so the running Zen still has the old code.
+  live_reload=true
+  needs_restart=true
+elif zen_dir >/dev/null; then
+  notify-send -a Zen "Zen restarts on every theme switch" \
+    "For live theme switching, run once: sudo ~/.config/omarchy/hooks/theme-set.d/zen-browser --install" \
+    2>/dev/null || true
+fi
+
 for profile_dir in "$ZEN_PROFILES_DIR"/*; do
   [[ -d $profile_dir ]] || continue
   [[ -f $profile_dir/prefs.js || -f $profile_dir/user.js ]] || continue
 
   chrome_dir="$profile_dir/chrome"
+  user_js="$profile_dir/user.js"
   mkdir -p "$chrome_dir"
 
-  ensure_user_chrome_import "$chrome_dir/userChrome.css"
-  ensure_user_pref "$profile_dir/user.js" "toolkit.legacyUserProfileCustomizations.stylesheets" "true"
-  ensure_user_pref "$profile_dir/user.js" "zen.theme.content-element-separation" "0"
+  has_user_pref "$user_js" "zen.theme.content-element-separation" "0" || needs_restart=true
+  ensure_user_pref "$user_js" "zen.theme.content-element-separation" "0"
 
-  cp "$ZEN_THEME_CSS" "$chrome_dir/omarchy.css"
+  if $live_reload; then
+    # Zen reads user.js only at startup, so enabling it takes one restart.
+    has_user_pref "$user_js" "zen.mods.live-stylesheet" "true" || needs_restart=true
+    ensure_user_pref "$user_js" "zen.mods.live-stylesheet" "true"
+    write_atomically "$ZEN_THEME_CSS" "$chrome_dir/zen-live.css"
+    remove_user_chrome_import "$chrome_dir/userChrome.css"
+    rm -f "$chrome_dir/omarchy.css"
+  else
+    needs_restart=true
+    ensure_user_chrome_import "$chrome_dir/userChrome.css"
+    ensure_user_pref "$user_js" "toolkit.legacyUserProfileCustomizations.stylesheets" "true"
+    rm -f "$chrome_dir/zen-live.css"
+    cp "$ZEN_THEME_CSS" "$chrome_dir/omarchy.css"
+  fi
 done
 
-restart_zen
+$needs_restart && restart_zen
+exit 0
