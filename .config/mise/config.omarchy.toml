@@ -25,3 +25,6 @@
 "~/.config/omarchy/hooks/theme-set.d/20-superproductivity-restart" = {}
 "~/.config/omarchy/hooks/theme-set.d/zen-browser" = {}
 "~/.config/omarchy/hooks/lib/relaunch-on-workspace.sh" = {}
+"~/.config/omarchy/hooks/lib/zen-live-extension/manifest.json" = {}
+"~/.config/omarchy/hooks/lib/zen-live-extension/api.js" = {}
+"~/.config/omarchy/hooks/lib/zen-live-extension/schema.json" = {}

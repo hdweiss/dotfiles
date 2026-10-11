@@ -1,14 +1,63 @@
 #!/bin/bash
 
-# Copy of bin/omarchy-theme-set-zen-browser from the fix-zen-sidebar-theme branch,
-# run as a theme-set hook until that lands upstream.
+# Based on bin/omarchy-theme-set-zen-browser from the fix-zen-sidebar-theme
+# branch, run as a theme-set hook until that lands upstream.
+#
+# Local addition: live theme switching. Zen runs no code from the profile, but
+# it loads unsigned extensions, and those may use privileged experiment APIs.
+# So this hook copies a small extension (zen-live@omarchy, in
+# ../lib/zen-live-extension) to ~/.local/share and points every Zen profile at
+# it. The extension applies <profile>/chrome/zen-live.css to every Zen window
+# and re-applies it whenever it changes, so the theme goes there and Zen no
+# longer restarts.
+#
+# Zen loads the extension at its next start, so the first theme switch restarts
+# Zen once. If the extension doesn't load, the theme falls back to an import in
+# userChrome.css, which Zen only reads at startup, and Zen restarts each time.
+#
+# To remove the extension: delete <profile>/extensions/zen-live@omarchy and
+# ~/.local/share/zen-live-extension, then restart Zen.
 
 ZEN_THEME_CSS="$HOME/.local/state/omarchy/current/theme/zen-browser.css"
 ZEN_PROFILES_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/zen"
 USER_CHROME_IMPORT='@import url("omarchy.css");'
 
+EXTENSION_ID=zen-live@omarchy
+EXTENSION_SOURCE="$HOME/.config/omarchy/hooks/lib/zen-live-extension"
+EXTENSION_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/zen-live-extension"
+
 [[ -d $ZEN_PROFILES_DIR ]] || exit 0
 [[ -f $ZEN_THEME_CSS ]] || exit 0
+[[ -f $EXTENSION_SOURCE/manifest.json ]] || exit 0
+
+# === The extension ===
+
+# Copies the extension only when it changed: Zen picks up a change at its next
+# start by the directory's modification time, so replace it whole.
+ensure_extension() {
+  local temp_dir
+
+  diff -rq "$EXTENSION_SOURCE" "$EXTENSION_DIR" >/dev/null 2>&1 && return
+  temp_dir=$(mktemp -d)
+  cp -rL "$EXTENSION_SOURCE"/. "$temp_dir"
+  chmod -R u=rwX,go=rX "$temp_dir"
+  rm -rf "$EXTENSION_DIR"
+  mkdir -p "$(dirname "$EXTENSION_DIR")"
+  mv "$temp_dir" "$EXTENSION_DIR"
+}
+
+# Whether Zen has loaded the extension in this profile, as recorded in
+# extensions.json: "active", "inactive" (seen but not loaded) or "unknown".
+extension_state() {
+  local state
+
+  state=$(jq -r --arg id "$EXTENSION_ID" \
+    'first(.addons[] | select(.id == $id) | if .active then "active" else "inactive" end) // "unknown"' \
+    "$1/extensions.json" 2>/dev/null)
+  echo "${state:-unknown}"
+}
+
+# === The profile ===
 
 ensure_user_chrome_import() {
   local user_chrome_css="$1"
@@ -24,6 +73,19 @@ ensure_user_chrome_import() {
   fi
 }
 
+# Returns 0 if there was an import to remove. Zen has that file loaded until
+# it restarts, and userChrome.css may override zen-live.css.
+remove_user_chrome_import() {
+  local user_chrome_css="$1"
+
+  grep -Fxq "$USER_CHROME_IMPORT" "$user_chrome_css" 2>/dev/null || return 1
+  sed -i --follow-symlinks "\|^${USER_CHROME_IMPORT//./\\.}\$|d" "$user_chrome_css"
+}
+
+has_user_pref() {
+  grep -Fxq "user_pref(\"$2\", $3);" "$1" 2>/dev/null
+}
+
 ensure_user_pref() {
   local user_js="$1"
   local pref_name="$2"
@@ -37,6 +99,17 @@ ensure_user_pref() {
   else
     printf '\nuser_pref("%s", %s);\n' "$pref_name" "$pref_value" >>"$user_js"
   fi
+}
+
+# Zen polls zen-live.css for changes, so replace it whole: a half-written file
+# would be applied for a moment.
+write_atomically() {
+  local source="$1" target="$2" temp_file
+
+  temp_file=$(mktemp "$target.XXXXXX")
+  cp "$source" "$temp_file"
+  chmod 644 "$temp_file"
+  mv "$temp_file" "$target"
 }
 
 restart_zen() {
@@ -65,18 +138,55 @@ restart_zen() {
   fi
 }
 
+ensure_extension
+needs_restart=false
+
 for profile_dir in "$ZEN_PROFILES_DIR"/*; do
   [[ -d $profile_dir ]] || continue
   [[ -f $profile_dir/prefs.js || -f $profile_dir/user.js ]] || continue
 
   chrome_dir="$profile_dir/chrome"
-  mkdir -p "$chrome_dir"
+  user_js="$profile_dir/user.js"
+  mkdir -p "$chrome_dir" "$profile_dir/extensions"
 
-  ensure_user_chrome_import "$chrome_dir/userChrome.css"
-  ensure_user_pref "$profile_dir/user.js" "toolkit.legacyUserProfileCustomizations.stylesheets" "true"
-  ensure_user_pref "$profile_dir/user.js" "zen.theme.content-element-separation" "0"
+  # Zen reads user.js and looks for new extensions only at startup.
+  #   signatures.required: load the extension, which is unsigned
+  #   experiments.enabled: let it use privileged APIs (the default in Zen)
+  #   startupScanScopes/autoDisableScopes: pick up extensions added to the
+  #     profile folder at startup, enabled without asking
+  #   content-element-separation: part of the theme
+  for pref in \
+    "xpinstall.signatures.required false" \
+    "extensions.experiments.enabled true" \
+    "extensions.startupScanScopes 1" \
+    "extensions.autoDisableScopes 14" \
+    "zen.theme.content-element-separation 0"; do
+    read -r pref_name pref_value <<<"$pref"
+    has_user_pref "$user_js" "$pref_name" "$pref_value" || needs_restart=true
+    ensure_user_pref "$user_js" "$pref_name" "$pref_value"
+  done
 
-  cp "$ZEN_THEME_CSS" "$chrome_dir/omarchy.css"
+  pointer="$profile_dir/extensions/$EXTENSION_ID"
+  if [[ $(cat "$pointer" 2>/dev/null) != "$EXTENSION_DIR" ]]; then
+    printf '%s\n' "$EXTENSION_DIR" >"$pointer"
+    needs_restart=true
+  fi
+
+  write_atomically "$ZEN_THEME_CSS" "$chrome_dir/zen-live.css"
+
+  if [[ $(extension_state "$profile_dir") == inactive ]]; then
+    # Zen saw the extension but didn't load it, so theme it at startup.
+    needs_restart=true
+    ensure_user_chrome_import "$chrome_dir/userChrome.css"
+    ensure_user_pref "$user_js" "toolkit.legacyUserProfileCustomizations.stylesheets" "true"
+    cp "$ZEN_THEME_CSS" "$chrome_dir/omarchy.css"
+  else
+    remove_user_chrome_import "$chrome_dir/userChrome.css" && needs_restart=true
+    rm -f "$chrome_dir/omarchy.css"
+  fi
 done
 
-restart_zen
+if $needs_restart; then
+  restart_zen
+fi
+exit 0
