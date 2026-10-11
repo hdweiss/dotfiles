@@ -11,36 +11,43 @@
       "Read(~/.ssh/**)",
       "Read(~/.aws/**)"
     ],
-    "ask": [
+    "defaultMode": "auto",
+    "//ask": [
       "Bash(git push:*)",
       "Bash(gh pr merge:*)",
       "Bash(npm publish:*)",
       "Bash(sudo:*)"
-    ],
-    "defaultMode": "acceptEdits",
-    "disableBypassPermissionsMode": "disable",
-    "blockReadsOutsideWorkingDirectories": true
+    ]
   },
-  "model": "opus",
   "disableRemoteControl": true,
-  "sandbox": {
-    "enabled": true,
-    "failIfUnavailable": true,
-    "autoAllowBashIfSandboxed": true,
-    "allowUnsandboxedCommands": false,
-    "filesystem": {
-      "allowRead": [
-        "~/.local/share/mise",
-        "~/.config/mise",
-        "~/.local/state/mise"
-      ]
-    }
-  },
   "spinnerTipsEnabled": false,
-  "voice": {
-    "enabled": false,
-    "mode": "hold"
-  },
   "theme": "custom:omarchy",
-  "voiceEnabled": false
+  "autoMode": {
+    "environment": [
+      "### Org-wide",
+      "**Organization**: None configured — repo is zen-browser/desktop, a standalone open-source project (no org affiliation evidence beyond this repo)",
+      "**Cloud provider(s)**: None configured",
+      "**Repository visibility**: PUBLIC — github.com/zen-browser/desktop (confirmed via gh)",
+      "**Internal sharing / snippet hosting**: None configured — treat public paste/gist services as outside the trust boundary",
+      "**Secrets management**: None configured — CI references secret names only (DEPLOY_KEY, DISCORD_WEBHOOK_URL, GITHUB_TOKEN, SURFER_CERT_PATCH_*, ZEN_* signing/API keys) but no secret values or store was identified",
+      "**Default / protected branches**: Default branch `dev`; protected branches `dev` and `stable` (via gh); rulesets active: `Code Quality Copilot review for default branch`, `Stable branch ruleset` (+1 ruleset name redacted/outside display charset)",
+      "**CI/CD deploy targets**: None configured",
+      "**Network posture**: None configured",
+      "**Host containment**: None configured — assume Claude Code runs on an ordinary developer machine with open internet",
+      "**Source control**: The trusted repo (zen-browser/desktop) and its origin remote (github.com/zen-browser/desktop) only",
+      "**Trusted internal domains**: None configured",
+      "**Trusted cloud buckets**: None configured",
+      "**Key internal services**: None configured",
+      "**Internal package registry**: None configured",
+      "**Sensitive data locations & audiences**: `build/signing/private_key.pem` and `build/signing/private_key.p12` (gitignored signing key material) — never commit or expose; CI secret names (DEPLOY_KEY, ZEN_SIGNING_CERT_PEM_BASE64, ZEN_SIGNING_PRIVATE_KEY_PEM_BASE64, ZEN_MAR_SIGNING_PASSWORD, ZEN_MOZILLA_API_KEY, ZEN_SAFEBROWSING_API_KEY, ZEN_GOOGLE_LOCATION_SERVICE_API_KEY, GITHUB_TOKEN) reference credentials whose values must never be printed or exfiltrated",
+      "**Data retention / declassification**: None configured",
+      "**Sensitive remote targets**: any namespace, host, or container whose name carries `prod` or `production` as a whole word or name segment",
+      "**Protected deployment namespaces / environments**: None configured — fall back to the Sensitive remote targets heuristic",
+      "**Protected IaC scopes**: IAM, RBAC, networking, quota, and node-pool resources; anything whose name or tag carries `prod` or `production` as a whole word or name segment",
+      "### User-specific",
+      "**Primary use of Claude Code**: software development (browser build/release tooling — Firefox-based browser, Makefile/CMake, package.json scripts for build/sync/l10n/surfer tooling)",
+      "**Trusted repo**: zen-browser/desktop (this repo, public) and its origin remote github.com/zen-browser/desktop.git — this repo is public, so only this repo's own work is fine to push; secrets/signing keys are never cleared by visibility",
+      "**Org-specific CLIs**: None configured — `surfer` is a repo-local build/release tool (package.json script), not a corroborated org CLI"
+    ]
+  }
 }
