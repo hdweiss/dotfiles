@@ -44,25 +44,27 @@ hl.unbind("SUPER + SHIFT + ALT + E")
 o.bind("SUPER + SHIFT + E", "Mail", "omarchy-shell shell toggle omamail")
 o.bind("SUPER + SHIFT + ALT + E", "Mail (compose)", "omarchy-shell shell summon omamail '{\"compose\":true}'")
 
+-- === App-first: SUPER+SHIFT+<key> = full app, +ALT = quick widget ===
+
 -- Calendar
 hl.unbind("SUPER + SHIFT + C")
-o.bind("SUPER + SHIFT + C", "Calendar popup", "omarchy-shell promaa.clock toggle")
-o.bind("SUPER + SHIFT + ALT+ C", "Calendar", 'omarchy-launch-webapp "https://calendar.google.com/calendar/u/0/r?pli=1"')
+o.bind("SUPER + SHIFT + C", "Calendar", 'omarchy-launch-webapp "https://calendar.google.com/calendar/u/0/r?pli=1"')
+o.bind("SUPER + SHIFT + ALT + C", "Calendar popup", "omarchy-shell promaa.clock toggle")
 
 -- WhatsApp  (was: "Signal" / "WhatsApp" webapp)
 hl.unbind("SUPER + SHIFT + G")
 hl.unbind("SUPER + SHIFT + ALT + G")
-o.bind("SUPER + SHIFT + G", "WhatsApp", "omarchy-shell shell toggle io.github.moizibnyousaf.omawhatsapp")
-o.bind("SUPER + SHIFT + ALT + G", "WhatsApp (app)", "omarchy-shell io.github.moizibnyousaf.omawhatsapp toggleApp ''")
+o.bind("SUPER + SHIFT + G", "WhatsApp (app)", "omarchy-shell io.github.moizibnyousaf.omawhatsapp toggleApp ''")
+o.bind("SUPER + SHIFT + ALT + G", "WhatsApp", "omarchy-shell shell toggle io.github.moizibnyousaf.omawhatsapp")
 
--- Super Productivity  (replaces the old raw SUPER+SHIFT+T launch)
-o.bind("SUPER + SHIFT + T", "Super Productivity", "omarchy-shell shell toggle apsingh.super-productivity")
-o.bind("SUPER + SHIFT + ALT + T", "Super Productivity (app)", { launch = "super-productivity", focus = "Productivity" })
+-- Super Productivity
+o.bind("SUPER + SHIFT + T", "Super Productivity (app)", { launch = "super-productivity", focus = "Productivity" })
+o.bind("SUPER + SHIFT + ALT + T", "Super Productivity", "omarchy-shell shell toggle apsingh.super-productivity")
 
--- Obsidian  (was: SUPER+SHIFT+O -> Obsidian desktop; quick search also stays on SUPER+N)
+-- Obsidian  (quick search also stays on SUPER+N)
 hl.unbind("SUPER + SHIFT + O")
-o.bind("SUPER + SHIFT + O", "Obsidian", "omarchy-shell shell toggle io.github.weedwhitesandwine.obsiduous")
-o.bind("SUPER + SHIFT + ALT + O", "Obsidian (app)", { launch = "obsidian", focus = "obsidian" })
+o.bind("SUPER + SHIFT + O", "Obsidian (app)", { launch = "obsidian", focus = "obsidian" })
+o.bind("SUPER + SHIFT + ALT + O", "Obsidian", "omarchy-shell shell toggle io.github.weedwhitesandwine.obsiduous")
 
 -- Photos (was: "Google Photos webapp")
 hl.unbind("SUPER + SHIFT + P")

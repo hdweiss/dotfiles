@@ -5,3 +5,6 @@ o.launch_on_start("hyprsunset")
 
 -- Preload Zen hidden on special:zen so Super+Shift+B is instant
 o.exec_on_start(os.getenv("HOME") .. "/.local/bin/zen-summon --preload")
+
+-- EasyEffects in the background; autoloads the "Laptop Speakers" preset on the built-in speakers
+o.launch_on_start("easyeffects --service-mode")

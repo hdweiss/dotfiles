@@ -17,6 +17,11 @@
           "id": "omarchy.workspaces"
         },
         {
+          "id": "andreasbylund.jellyfin",
+          "showBarTitle": false,
+          "albumArtistsOnly": true
+        },
+        {
           "id": "quickshell.spotify",
           "deviceName": "Omarchy Spotify",
           "idleShutdownMinutes": 15,
@@ -82,24 +87,10 @@
       ],
       "right": [
         {
-          "id": "andreasbylund.jellyfin",
-          "showBarTitle": false,
-          "albumArtistsOnly": true
-        },
-        {
           "id": "omarchy.agents"
         },
         {
           "id": "omarchy.tray"
-        },
-        {
-          "id": "io.github.elevate08.qs-bitwarden-cli",
-          "colorizeIcon": false,
-          "closeOnCopy": true,
-          "autoLockMinutes": 0,
-          "clearClipboardSec": 120,
-          "lockOnScreenLock": false,
-          "lockOnSuspend": false
         },
         {
           "id": "omarchy.tailscale"
