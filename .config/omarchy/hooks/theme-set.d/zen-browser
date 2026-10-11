@@ -3,153 +3,59 @@
 # Based on bin/omarchy-theme-set-zen-browser from the fix-zen-sidebar-theme
 # branch, run as a theme-set hook until that lands upstream.
 #
-# Local addition: live theme switching. Zen runs no code from the profile, so
-# `--install` adds a Firefox AutoConfig script to the Zen installation. It
-# loads a small module (embedded below) that applies
+# Local addition: live theme switching. Zen runs no code from the profile, but
+# it loads unsigned extensions, and those may use privileged experiment APIs.
+# So this hook keeps a small extension (zen-live@omarchy, written below) in
+# ~/.local/share and points every Zen profile at it. The extension applies
 # <profile>/chrome/zen-live.css to every Zen window and re-applies it whenever
-# it changes. With that in place the theme goes to zen-live.css and Zen no
-# longer restarts; until then it falls back to importing the theme from
-# userChrome.css, which Zen only reads at startup.
+# it changes, so the theme goes there and Zen no longer restarts.
 #
-# AutoConfig files live next to Zen in /opt, so this needs root once. Zen
-# updates leave them alone.
-#   sudo zen-browser --install     add the AutoConfig files, then restart Zen
-#   sudo zen-browser --uninstall   remove them
-# Set ZEN_DIR to the Zen installation if it isn't in /opt or on $PATH.
+# Zen loads the extension at its next start, so the first theme switch restarts
+# Zen once. If the extension doesn't load, the theme falls back to an import in
+# userChrome.css, which Zen only reads at startup, and Zen restarts each time.
+#
+# To remove the extension: delete <profile>/extensions/zen-live@omarchy and
+# ~/.local/share/zen-live-extension, then restart Zen.
 
 ZEN_THEME_CSS="$HOME/.local/state/omarchy/current/theme/zen-browser.css"
 ZEN_PROFILES_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/zen"
 USER_CHROME_IMPORT='@import url("omarchy.css");'
 
-# Relative to the Zen installation.
-AUTOCONFIG_PREFS=defaults/pref/zen-live-autoconfig.js
-AUTOCONFIG_SCRIPT=zen-live.cfg
-MODULE_DIR=zen-live
+EXTENSION_ID=zen-live@omarchy
+EXTENSION_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/zen-live-extension"
 
-self=$(readlink -f "$0")
+[[ -d $ZEN_PROFILES_DIR ]] || exit 0
+[[ -f $ZEN_THEME_CSS ]] || exit 0
 
-# === Installing into Zen ===
+# === The extension ===
 
-die() {
-  echo "zen-browser: $*" >&2
-  exit 1
-}
-
-# The Zen installation directory.
-zen_dir() {
-  local candidate binary
-
-  [[ -n ${ZEN_DIR:-} ]] && echo "$ZEN_DIR" && return
-  for candidate in /opt/zen-browser-bin /opt/zen-browser; do
-    [[ -f $candidate/browser/omni.ja ]] && echo "$candidate" && return
-  done
-  for binary in zen-bin zen-browser zen; do
-    command -v "$binary" >/dev/null || continue
-    candidate=$(dirname "$(readlink -f "$(command -v "$binary")")")
-    [[ -f $candidate/browser/omni.ja ]] && echo "$candidate" && return
-  done
-  return 1
-}
-
-zen_live_installed() {
-  local dir
-
-  dir=$(zen_dir) || return 1
-  [[ -f $dir/$AUTOCONFIG_PREFS && -f $dir/$AUTOCONFIG_SCRIPT ]]
-}
-
-install_zen_live() {
-  local dir other
-
-  dir=$(zen_dir) || die "no Zen installation found"
-  [[ -w $dir ]] || die "cannot write $dir, run with sudo"
-
-  # AutoConfig takes a single script, so don't take over someone else's.
-  other=$(grep -l 'general\.config\.filename' "$dir"/defaults/pref/*.js 2>/dev/null |
-    grep -vx "$dir/$AUTOCONFIG_PREFS")
-  [[ -z $other ]] || die "another AutoConfig is set up in $other"
-
-  mkdir -p "$dir/defaults/pref" "$dir/$MODULE_DIR"
-  write_autoconfig_prefs >"$dir/$AUTOCONFIG_PREFS"
-  write_autoconfig_script >"$dir/$AUTOCONFIG_SCRIPT"
-  echo "content zenlive ./" >"$dir/$MODULE_DIR/chrome.manifest"
-  write_live_module >"$dir/$MODULE_DIR/ZenLive.sys.mjs"
-  chmod 644 "$dir/$AUTOCONFIG_PREFS" "$dir/$AUTOCONFIG_SCRIPT" "$dir/$MODULE_DIR"/*
-  echo "zen-browser: installed live theme switching into $dir, restart Zen to load it"
-}
-
-uninstall_zen_live() {
-  local dir
-
-  dir=$(zen_dir) || die "no Zen installation found"
-  [[ -w $dir ]] || die "cannot write $dir, run with sudo"
-  rm -rf "${dir:?}/$AUTOCONFIG_PREFS" "${dir:?}/$AUTOCONFIG_SCRIPT" "${dir:?}/$MODULE_DIR"
-  echo "zen-browser: removed live theme switching from $dir, restart Zen to unload it"
-}
-
-write_autoconfig_prefs() {
-  cat <<'EOF'
-// Runs zen-live.cfg at startup, for live theme switching. Installed by the
-// Omarchy zen-browser theme-set hook; remove it with that hook's --uninstall.
-pref("general.config.filename", "zen-live.cfg");
-pref("general.config.obscure_value", 0);
-pref("general.config.sandbox_enabled", false);
-EOF
-}
-
-# AutoConfig skips the first line. The script only registers the zen-live
-# directory as chrome://zenlive/ and starts the module there, which gets the
-# globals every browser module has.
-write_autoconfig_script() {
-  cat <<'EOF'
-// zen-live.cfg: installed by the Omarchy zen-browser theme-set hook.
-try {
-  const manifest = Cc["@mozilla.org/file/directory_service;1"]
-    .getService(Ci.nsIProperties)
-    .get("GreD", Ci.nsIFile);
-  manifest.append("zen-live");
-  manifest.append("chrome.manifest");
-  Components.manager
-    .QueryInterface(Ci.nsIComponentRegistrar)
-    .autoRegister(manifest);
-  ChromeUtils.importESModule(
-    "chrome://zenlive/content/ZenLive.sys.mjs"
-  ).gZenLive.init();
-} catch (e) {
-  Cc["@mozilla.org/consoleservice;1"]
-    .getService(Ci.nsIConsoleService)
-    .logStringMessage("zen-live: " + e);
-}
-EOF
-}
-
-write_live_module() {
+write_extension_api() {
   cat <<'JS'
 /**
  * Applies <profile>/chrome/zen-live.css to every Zen window as a user sheet,
  * like userChrome.css, and re-applies it whenever it or the local files it
- * @import-s change on disk. Loaded at startup by zen-live.cfg (AutoConfig).
+ * @import-s change on disk.
  *
- * Imports are inlined and the result is loaded as a data: URI, so every
- * change is a new sheet the CSS loader hasn't cached. There is no file
- * watcher available to chrome code on Linux, so this polls modification
- * times.
+ * This is an experiment API that only uses the "startup" event, so it runs
+ * with chrome privileges as soon as Zen starts the extension. Imports are
+ * inlined and the result is loaded as a data: URI, so every change is a new
+ * sheet the CSS loader hasn't cached. There is no file watcher available to
+ * chrome code on Linux, so this polls modification times.
  */
 
-const lazy = {};
+/* global ExtensionAPI, ChromeUtils, IOUtils, PathUtils, Services */
 
-ChromeUtils.defineESModuleGetters(lazy, {
-  clearInterval: "resource://gre/modules/Timer.sys.mjs",
-  setInterval: "resource://gre/modules/Timer.sys.mjs",
-});
+var { clearInterval, setInterval } = ChromeUtils.importESModule(
+  "resource://gre/modules/Timer.sys.mjs"
+);
 
-const POLL_INTERVAL_MS = 1000;
+var POLL_INTERVAL_MS = 1000;
 
 // `@import url("a.css");`, `@import url(a.css);` or `@import "a.css";`,
 // without media queries or layers.
-const IMPORT_RE =
+var IMPORT_RE =
   /@import\s+(?:url\(\s*["']?([^"')\s]+)["']?\s*\)|["']([^"']+)["'])\s*;/g;
-const URL_SCHEME_RE = /^[a-z][a-z\d+.-]*:/i;
+var URL_SCHEME_RE = /^[a-z][a-z\d+.-]*:/i;
 
 class ZenLive {
   // data: URI of the current stylesheet, null if there is none.
@@ -161,44 +67,67 @@ class ZenLive {
   #ready = null;
   #interval = null;
   #polling = false;
+  #stopped = false;
 
-  init() {
+  start() {
     Services.obs.addObserver(this, "domwindowopened");
-    Services.obs.addObserver(this, "quit-application-granted");
+    for (const win of Services.wm.getEnumerator(null)) {
+      if (
+        win.document.readyState === "loading" ||
+        win.document.documentURI === "about:blank"
+      ) {
+        this.#attachWhenLoaded(win);
+      } else {
+        this.#attach(win);
+      }
+    }
   }
 
-  observe(aSubject, aTopic) {
-    if (aTopic === "quit-application-granted") {
-      if (this.#interval) {
-        lazy.clearInterval(this.#interval);
-      }
-      Services.obs.removeObserver(this, "domwindowopened");
-      Services.obs.removeObserver(this, "quit-application-granted");
-      return;
+  stop() {
+    this.#stopped = true;
+    Services.obs.removeObserver(this, "domwindowopened");
+    if (this.#interval) {
+      clearInterval(this.#interval);
     }
-    const win = aSubject;
+    this.#uri = null;
+    this.#applyToAll();
+  }
+
+  observe(aSubject) {
+    this.#attachWhenLoaded(aSubject);
+  }
+
+  #attachWhenLoaded(aWindow) {
     const onLoad = event => {
-      if (event.target !== win.document) {
+      if (event.target !== aWindow.document) {
         return;
       }
-      win.removeEventListener("DOMContentLoaded", onLoad);
-      this.#attach(win).catch(e => console.error("[ZenLive]:", e));
+      aWindow.removeEventListener("DOMContentLoaded", onLoad);
+      this.#attach(aWindow);
     };
-    win.addEventListener("DOMContentLoaded", onLoad);
+    aWindow.addEventListener("DOMContentLoaded", onLoad);
   }
 
   async #attach(aWindow) {
-    if (!aWindow.document.documentURI.startsWith("chrome:")) {
-      return;
+    try {
+      if (!aWindow.document.documentURI.startsWith("chrome:")) {
+        return;
+      }
+      this.#ready ??= this.#begin();
+      await this.#ready;
+      if (!this.#stopped) {
+        this.#applyTo(aWindow);
+      }
+    } catch (e) {
+      console.error("[ZenLive]:", e);
     }
-    this.#ready ??= this.#start();
-    await this.#ready;
-    this.#applyTo(aWindow);
   }
 
-  async #start() {
+  async #begin() {
     await this.#read();
-    this.#interval = lazy.setInterval(() => this.#poll(), POLL_INTERVAL_MS);
+    if (!this.#stopped) {
+      this.#interval = setInterval(() => this.#poll(), POLL_INTERVAL_MS);
+    }
   }
 
   get #path() {
@@ -227,6 +156,14 @@ class ZenLive {
       utils.removeSheetUsingURIString(old, utils.USER_SHEET);
     }
     this.#applied.set(aWindow, this.#uri);
+  }
+
+  #applyToAll() {
+    for (const win of Services.wm.getEnumerator(null)) {
+      if (this.#applied.has(win)) {
+        this.#applyTo(win);
+      }
+    }
   }
 
   async #getModifiedTime(aPath) {
@@ -288,10 +225,8 @@ class ZenLive {
         // progress, so wait for it to come back.
         if (current !== null && current !== mtime) {
           await this.#read();
-          for (const win of Services.wm.getEnumerator(null)) {
-            if (this.#applied.has(win)) {
-              this.#applyTo(win);
-            }
+          if (!this.#stopped) {
+            this.#applyToAll();
           }
           break;
         }
@@ -304,25 +239,81 @@ class ZenLive {
   }
 }
 
-export const gZenLive = new ZenLive();
+this.zenLive = class extends ExtensionAPI {
+  onStartup() {
+    this.live = new ZenLive();
+    this.live.start();
+  }
+
+  onShutdown() {
+    this.live?.stop();
+  }
+
+  getAPI() {
+    return { zenLive: {} };
+  }
+};
 JS
 }
 
-case ${1:-} in
---install)
-  install_zen_live
-  exit
-  ;;
---uninstall)
-  uninstall_zen_live
-  exit
-  ;;
-esac
+write_extension_manifest() {
+  cat <<EOF
+{
+  "manifest_version": 2,
+  "name": "Omarchy live theme",
+  "version": "$1",
+  "description": "Applies the Omarchy theme to Zen as it changes. Managed by the Omarchy zen-browser theme-set hook.",
+  "browser_specific_settings": {
+    "gecko": { "id": "$EXTENSION_ID" }
+  },
+  "experiment_apis": {
+    "zenLive": {
+      "schema": "schema.json",
+      "parent": {
+        "scopes": ["addon_parent"],
+        "paths": [["zenLive"]],
+        "script": "api.js",
+        "events": ["startup"]
+      }
+    }
+  }
+}
+EOF
+}
 
-# === Applying the theme ===
+# Rewrites the extension only when it changed: Zen picks up a change at its
+# next start by the manifest, whose version follows the code.
+ensure_extension() {
+  local temp_dir version
 
-[[ -d $ZEN_PROFILES_DIR ]] || exit 0
-[[ -f $ZEN_THEME_CSS ]] || exit 0
+  temp_dir=$(mktemp -d)
+  write_extension_api >"$temp_dir/api.js"
+  echo '[{ "namespace": "zenLive", "functions": [] }]' >"$temp_dir/schema.json"
+  version="1.0.$(cksum <"$temp_dir/api.js" | cut -d' ' -f1)"
+  write_extension_manifest "$version" >"$temp_dir/manifest.json"
+
+  if diff -rq "$temp_dir" "$EXTENSION_DIR" >/dev/null 2>&1; then
+    rm -rf "$temp_dir"
+  else
+    rm -rf "$EXTENSION_DIR"
+    mkdir -p "$(dirname "$EXTENSION_DIR")"
+    mv "$temp_dir" "$EXTENSION_DIR"
+    chmod 755 "$EXTENSION_DIR"
+  fi
+}
+
+# Whether Zen has loaded the extension in this profile, as recorded in
+# extensions.json: "active", "inactive" (seen but not loaded) or "unknown".
+extension_state() {
+  local state
+
+  state=$(jq -r --arg id "$EXTENSION_ID" \
+    'first(.addons[] | select(.id == $id) | if .active then "active" else "inactive" end) // "unknown"' \
+    "$1/extensions.json" 2>/dev/null)
+  echo "${state:-unknown}"
+}
+
+# === The profile ===
 
 ensure_user_chrome_import() {
   local user_chrome_css="$1"
@@ -338,11 +329,12 @@ ensure_user_chrome_import() {
   fi
 }
 
-# userChrome.css is applied after zen-live.css, so a stale import would win.
+# Returns 0 if there was an import to remove. Zen has that file loaded until
+# it restarts, and userChrome.css may override zen-live.css.
 remove_user_chrome_import() {
   local user_chrome_css="$1"
 
-  [[ -f $user_chrome_css ]] || return 0
+  grep -Fxq "$USER_CHROME_IMPORT" "$user_chrome_css" 2>/dev/null || return 1
   sed -i --follow-symlinks "\|^${USER_CHROME_IMPORT//./\\.}\$|d" "$user_chrome_css"
 }
 
@@ -402,16 +394,8 @@ restart_zen() {
   fi
 }
 
-live_reload=false
+ensure_extension
 needs_restart=false
-
-if zen_live_installed; then
-  live_reload=true
-elif zen_dir >/dev/null; then
-  notify-send -a Zen "Zen restarts on every theme switch" \
-    "For live theme switching, run once: sudo ~/.config/omarchy/hooks/theme-set.d/zen-browser --install" \
-    2>/dev/null || true
-fi
 
 for profile_dir in "$ZEN_PROFILES_DIR"/*; do
   [[ -d $profile_dir ]] || continue
@@ -419,23 +403,46 @@ for profile_dir in "$ZEN_PROFILES_DIR"/*; do
 
   chrome_dir="$profile_dir/chrome"
   user_js="$profile_dir/user.js"
-  mkdir -p "$chrome_dir"
+  mkdir -p "$chrome_dir" "$profile_dir/extensions"
 
-  has_user_pref "$user_js" "zen.theme.content-element-separation" "0" || needs_restart=true
-  ensure_user_pref "$user_js" "zen.theme.content-element-separation" "0"
+  # Zen reads user.js and looks for new extensions only at startup.
+  #   signatures.required: load the extension, which is unsigned
+  #   experiments.enabled: let it use privileged APIs (the default in Zen)
+  #   startupScanScopes/autoDisableScopes: pick up extensions added to the
+  #     profile folder at startup, enabled without asking
+  #   content-element-separation: part of the theme
+  for pref in \
+    "xpinstall.signatures.required false" \
+    "extensions.experiments.enabled true" \
+    "extensions.startupScanScopes 1" \
+    "extensions.autoDisableScopes 14" \
+    "zen.theme.content-element-separation 0"; do
+    read -r pref_name pref_value <<<"$pref"
+    has_user_pref "$user_js" "$pref_name" "$pref_value" || needs_restart=true
+    ensure_user_pref "$user_js" "$pref_name" "$pref_value"
+  done
 
-  if $live_reload; then
-    write_atomically "$ZEN_THEME_CSS" "$chrome_dir/zen-live.css"
-    remove_user_chrome_import "$chrome_dir/userChrome.css"
-    rm -f "$chrome_dir/omarchy.css"
-  else
+  pointer="$profile_dir/extensions/$EXTENSION_ID"
+  if [[ $(cat "$pointer" 2>/dev/null) != "$EXTENSION_DIR" ]]; then
+    printf '%s\n' "$EXTENSION_DIR" >"$pointer"
+    needs_restart=true
+  fi
+
+  write_atomically "$ZEN_THEME_CSS" "$chrome_dir/zen-live.css"
+
+  if [[ $(extension_state "$profile_dir") == inactive ]]; then
+    # Zen saw the extension but didn't load it, so theme it at startup.
     needs_restart=true
     ensure_user_chrome_import "$chrome_dir/userChrome.css"
     ensure_user_pref "$user_js" "toolkit.legacyUserProfileCustomizations.stylesheets" "true"
-    rm -f "$chrome_dir/zen-live.css"
     cp "$ZEN_THEME_CSS" "$chrome_dir/omarchy.css"
+  else
+    remove_user_chrome_import "$chrome_dir/userChrome.css" && needs_restart=true
+    rm -f "$chrome_dir/omarchy.css"
   fi
 done
 
-$needs_restart && restart_zen
+if $needs_restart; then
+  restart_zen
+fi
 exit 0
