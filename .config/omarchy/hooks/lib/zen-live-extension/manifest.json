@@ -1,0 +1,20 @@
+{
+  "manifest_version": 2,
+  "name": "Omarchy live theme",
+  "version": "1.0.0",
+  "description": "Applies the Omarchy theme to Zen as it changes. Managed by the Omarchy zen-browser theme-set hook.",
+  "browser_specific_settings": {
+    "gecko": { "id": "zen-live@omarchy" }
+  },
+  "experiment_apis": {
+    "zenLive": {
+      "schema": "schema.json",
+      "parent": {
+        "scopes": ["addon_parent"],
+        "paths": [["zenLive"]],
+        "script": "api.js",
+        "events": ["startup"]
+      }
+    }
+  }
+}
