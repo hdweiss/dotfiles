@@ -64,15 +64,23 @@ zen_is_patched() {
 }
 
 extract_omni() {
-  local omni="$1" dir="$2" status=0
+  local omni="$1" dir="$2" log
 
+  mkdir -p "$dir"
+  log=$(mktemp)
+  # omni.ja is an "optimized" jar, which unzip reports as an error even
+  # though it extracts fine, so check for the file this needs instead.
   if command -v unzip >/dev/null; then
-    # omni.ja is an "optimized" jar, which unzip warns about (exit code 1).
-    unzip -q "$omni" -d "$dir" 2>/dev/null || status=$?
-    ((status <= 1)) || die "could not extract $omni"
+    unzip -qo "$omni" -d "$dir" >"$log" 2>&1
   else
-    bsdtar -xf "$omni" -C "$dir" || die "could not extract $omni"
+    bsdtar -xf "$omni" -C "$dir" >"$log" 2>&1
   fi
+  if [[ ! -f $dir/$ZEN_MODS_ENTRY ]]; then
+    cat "$log" >&2
+    rm -f "$log"
+    die "could not extract $ZEN_MODS_ENTRY from $omni"
+  fi
+  rm -f "$log"
 }
 
 archive_omni() {
@@ -124,7 +132,8 @@ patch_zen() {
   mkdir -p "$(dirname "$work/omni/$MODULE_ENTRY")"
   write_live_stylesheet_module >"$work/omni/$MODULE_ENTRY"
 
-  archive_omni "$work/omni" "$work/omni.ja"
+  archive_omni "$work/omni" "$work/omni.ja" && [[ -s $work/omni.ja ]] ||
+    die "could not repack $omni (needs zip or bsdtar), left unchanged"
   cp -p "$omni" "$omni.zen-live-orig"
   # Rename into place: a running Zen keeps reading the old file.
   cp "$work/omni.ja" "$omni.zen-live-new"
